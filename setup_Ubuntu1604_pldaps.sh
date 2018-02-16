@@ -90,6 +90,12 @@ install_standard_packages() {
     # Make Linux ux less user-hostile
     sudo apt install -y gnome-sushi classicmenu-indicator
     gsettings set com.canonical.Unity always-show-menus true
+    gsettings set org.gnome.nautilus.preferences default-folder-viewer 'list-view'
+    gsettings set org.gnome.nautilus.list-view default-zoom-level 'smaller'
+    gsettings set org.gnome.nautilus.list-view use-tree-view true
+    gsettings set org.gnome.nautilus.desktop home-icon-visible true
+    gsettings set org.gnome.nautilus.desktop volumes-visible true
+
 
     # Colorize git diff output      # https://github.com/so-fancy/diff-so-fancy
     wget -O $HOME/.local/share/applications/gitdiffcolors "https://raw.githubusercontent.com/so-fancy/diff-so-fancy/master/third_party/build_fatpack/diff-so-fancy"
@@ -159,6 +165,7 @@ remove_bloat_packages() {
 
     # Remove amazon app from dash, we can't remove the package
     sudo rm -rf /usr/share/applications/ubuntu-amazon-default.desktop
+    sudo rm -rf /usr/share/applications/ubuntu-software.desktop
     
     # Reveal all system startup apps (recommend disable Backup Monitor & Desktop Sharing if unused)
     sudo sed -i 's/NoDisplay=true/NoDisplay=false/g' /etc/xdg/autostart/*.desktop
@@ -196,17 +203,18 @@ fi
 
     # Add directories for Matlab toolboxes
     mkdir -v -m 775 "$TOOLROOT"
+    ln -vs $TOOLROOT $HOME/Desktop
     # chown -v "$SCRIPT_USER":"$SCRIPT_USER" "$TOOLROOT"
 
     # symlink default PTB install location to ~/MLtoolbox
-    ln -v -s /usr/share/psychtoolbox-3 $TOOLROOT/Psychtoolbox # def PTB location hardcoded by neurodebian
+    ln -vs /usr/share/psychtoolbox-3 $TOOLROOT/Psychtoolbox # def PTB location hardcoded by neurodebian
     sudo chmod -R 775 $TOOLROOT/Psychtoolbox
 
     # git additional toolboxes
     cd $TOOLROOT
     # ------ Public repositories ------
 	# PLDAPS
-	git clone https://github.com/HukLab/PLDAPS.git
+	git clone -b glDraw https://github.com/HukLab/PLDAPS.git
 
     # ------ Private repositories ------
     # huklabBasics
@@ -215,6 +223,7 @@ fi
 	git clone https://github.com/czuba/visbox.git
 	# misc system & pref files
 	git clone https://github.com/czuba/riffraff.git
+    cp riffraff/MLlogo.png $HOME/.local/applications/MLlogo.png
 	# update local matlab startup.m
     mkdir -vpm 775 $HOME/Documents/MATLAB
 	ln -vbs $TOOLROOT/riffraff/startup.m $HOME/Documents/MATLAB/startup.m
