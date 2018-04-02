@@ -82,13 +82,16 @@ remove_packages() {
 
 install_standard_packages() {
     # Basic packages
-    sudo apt install -y vlc gimp dconf-tools compizconfig-settings-manager unity-tweak-tool gparted git ubuntu-restricted-extras
+    sudo apt install -y git meld ubuntu-restricted-extras vlc gimp dconf-tools compizconfig-settings-manager unity-tweak-tool gparted exfat-utils exfat-fuse libjogl2-java freeglut3 libusb-1.0
+    
+    # ...possibly sketchy wildcards here to deal with esoteric versioned package names
+    sudo apt install -y libdc1394* libraw1394*
 
     # Google Chrome browser
     install_google_chrome
 
-    # Make Linux ux less user-hostile
-    sudo apt install -y gnome-sushi classicmenu-indicator
+    # Make Ubuntu ux less user-hostile
+    sudo apt install -y gnome-sushi
     gsettings set com.canonical.Unity always-show-menus true
     gsettings set org.gnome.nautilus.preferences default-folder-viewer 'list-view'
     gsettings set org.gnome.nautilus.list-view default-zoom-level 'smaller'
@@ -135,7 +138,6 @@ fi
 remove_bloat_packages() {
     # List of apps to remove
     declare -a APPS=(
-    "firefox*"
     "xul-ext-ubufox*"
     "thunderbird*"
     "libreoffice-*"
@@ -143,7 +145,6 @@ remove_bloat_packages() {
     "deja-dup*"
     "transmission-gtk"
     "totem"
-    "shotwell"
     "example-content"
     "gnome-calendar"
     "gnome-sudoku"
@@ -208,25 +209,20 @@ fi
 
     # symlink default PTB install location to ~/MLtoolbox
     ln -vs /usr/share/psychtoolbox-3 $TOOLROOT/Psychtoolbox # def PTB location hardcoded by neurodebian
-    sudo chmod -R 775 $TOOLROOT/Psychtoolbox
+    sudo chmod -R 777 $TOOLROOT/Psychtoolbox
 
     # git additional toolboxes
     cd $TOOLROOT
+
     # ------ Public repositories ------
 	# PLDAPS
 	git clone -b glDraw https://github.com/HukLab/PLDAPS.git
 
-    # ------ Private repositories ------
-    # huklabBasics
-	git clone https://github.com/HukLab/huklabBasics.git
-	# visbox (TBC Toolbox [et.al.] migrated from Dropbox)
-	git clone https://github.com/czuba/visbox.git
-	# misc system & pref files
-	git clone https://github.com/czuba/riffraff.git
-    cp riffraff/MLlogo.png $HOME/.local/applications/MLlogo.png
-	# update local matlab startup.m
-    mkdir -vpm 775 $HOME/Documents/MATLAB
-	ln -vbs $TOOLROOT/riffraff/startup.m $HOME/Documents/MATLAB/startup.m
+	# Eyelink toolbox libraries (ver. 1.11; Spring 2018)
+	wget -O - "http://download.sr-support.com/software/dists/SRResearch/SRResearch_key" | sudo apt-key add -
+	sudo add-apt-repository "deb http://download.sr-support.com/software SRResearch main"
+	sudo apt update
+	sudo apt install -y eyelink-display-software
 
 
 # Create PLDAPS data directories?
@@ -245,4 +241,64 @@ fi
 ################################################################################
 
 echo ""
-echo "system customization successful"
+echo "system customization complete"
+
+printf "
+
+::: Next Steps :::
+
+1)
+Install Matlab in default location: /usr/local/MATLAB/R20##x
+
+2)
+Patch persistent Matlab issues on Linux:
+2.1)
+Install matlab-support package
+- Terminal:
+    apt search matlab-support
+- *** As of 2018-03, matlab-support package incompatible with Ubuntu 16.04 & Matlab 2018a(+).
+    - Resulted in startup errors about gcc version something something;
+    had to manually undo lib edits it applied.
+2.2)
+As of Spring 2018, must patch broken Matlab/jogl errors (2016b, 2017b, 2018a, et al.)
+...luckily, I wrote a script for that too:
+    ubuntuFixJogl_ML2018a.sh
+
+3)
+Setup Matlab & Psychtoolbox
+3.1)
+Open matlab & run:  ~/MLtoolbox/Psychtoolbox/PsychLinuxConfiguration.m
+3.2)
+Setup xorg config(s) for your experimental rig with:
+    Psychtoolbox/PsychHardware/XOrgConfCreator.m
+    Psychtoolbox/PsychHardware/XOrgConfSelector.m
+
+4)
+Configure Eyelink network connection
+    - Note: this prob won't stick across reboots, but should get you started
+- Connect with ethernet cable
+- Terminal:
+    ip link
+    - Will list info/state of ethernet ports, use trial & error to determine
+    which one corresponds to the eyelink
+    - Needed identifier should be something like 'enp3s0'
+- Terminal:
+    sudo ip link set enp3s0 up
+    sudo ip addr add 100.1.1.2/24 dev enp3s0
+    - (...obviously, if your enxXXX is different, use that)
+- Terminal:
+    ping 100.1.1.2
+    - This should start listing successful pings to the eyelink connection,
+    ctrl-c to stop it. Find someone to hi-five. You're done.
+
+5)
+...surely there's more...
+
+---------------
+TBC 2018-03-27
+---------------
+
+"
+
+
+
